@@ -5,7 +5,7 @@ export const config: VercelConfig = {
   crons: [
     {
       path: "/api/cron/weekly-images",
-      schedule: "0 2-7 * * 2",
+      schedule: "0 5 * * 2",
     },
   ],
 };
