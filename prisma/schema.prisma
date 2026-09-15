@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AppMeta {
+  id           Int       @id @default(1)
+  lastSyncedAt DateTime?
+  nflWeek      Int?
+  nflSeason    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model League {
+  id                      String           @id @default(cuid())
+  sleeperLeagueId         String           @unique
+  name                    String
+  slug                    String
+  season                  String
+  previousSleeperLeagueId String?
+  playoffWeekStart        Int              @default(15)
+  playoffTeams            Int              @default(6)
+  totalRosters            Int              @default(12)
+  lastSyncedAt            DateTime?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  teams                   Team[]
+  generatedImages         GeneratedImage[]
+
+  @@index([season])
+}
+
+model Team {
+  id              String        @id @default(cuid())
+  leagueId        String
+  league          League        @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  sleeperRosterId Int
+  ownerUserId     String?
+  username        String?
+  displayName     String?
+  teamName        String?
+  avatar          String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  weeklyScores    WeeklyScore[]
+
+  @@unique([leagueId, sleeperRosterId])
+  @@index([leagueId])
+}
+
+model WeeklyScore {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  week      Int
+  points    Float    @default(0)
+  matchupId Int?
+  won       Boolean  @default(false)
+  tied      Boolean  @default(false)
+  roulette  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([teamId, week])
+  @@index([week])
+}
+
+model GeneratedImage {
+  id        String   @id @default(cuid())
+  leagueId  String
+  league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  season    String
+  week      Int
+  blobUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leagueId, season, week])
+  @@index([season, week])
+}
