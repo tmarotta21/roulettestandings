@@ -61,7 +61,11 @@ export default async function AdminPage() {
           <CardTitle>Sleeper chat upload</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-emerald-100/70">
-          <p>{chatSkipMessage(chat.reason === "ok" ? "awaiting-approval" : chat.reason)}</p>
+          <p>
+            {chat.allowed
+              ? "Sleeper chat post is on. Weekly standings post to league chat automatically."
+              : chatSkipMessage(chat.reason)}
+          </p>
           <p className="mt-2">
             Automated posts stay off until you approve sending messages in league
             chats and set <code>SLEEPER_CHAT_POST=1</code> with a captured{" "}
