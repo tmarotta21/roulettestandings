@@ -48,8 +48,9 @@ export default async function AdminPage() {
             <AdminLeagueForm leagues={hosted} />
           ) : (
             <p className="text-sm text-red-300">
-              DATABASE_URL is not set. League add/remove needs Neon from{" "}
-              <code>vercel env pull</code>.
+              No Postgres URL in this deployment. Set <code>DATABASE_URL</code> or
+              Neon&apos;s <code>DATABASE_URL_UNPOOLED</code> on the Vercel project,
+              then redeploy.
             </p>
           )}
         </CardContent>

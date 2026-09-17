@@ -15,19 +15,26 @@ export default async function LoginPage({
         <h1 className="text-2xl font-semibold">Commissioner login</h1>
         <p className="mt-2 text-sm text-emerald-100/70">
           {adminPinConfigured()
-            ? "Enter the admin PIN to manage hosted leagues and download standings."
-            : "Set ADMIN_PIN in the environment, then come back."}
+            ? "Enter the admin password to manage hosted leagues and download standings."
+            : "Set ADMIN_PASSWORD or ADMIN_PIN in Vercel, then come back."}
         </p>
       </div>
       <form action="/api/admin/login" method="post" className="space-y-3">
         <div className="space-y-1">
-          <Label htmlFor="pin">PIN</Label>
-          <Input id="pin" name="pin" type="password" required disabled={!adminPinConfigured()} />
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            disabled={!adminPinConfigured()}
+          />
         </div>
         <Button type="submit" disabled={!adminPinConfigured()}>
           Enter
         </Button>
-        {error ? <p className="text-sm text-red-300">Wrong PIN.</p> : null}
+        {error ? <p className="text-sm text-red-300">Wrong password.</p> : null}
       </form>
     </div>
   );
