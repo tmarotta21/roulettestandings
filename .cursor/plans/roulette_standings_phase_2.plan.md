@@ -1,6 +1,8 @@
 ---
 name: Roulette standings phase 2
 overview: Build the public roulettestandings app on top of the existing phase 1 engine. Do not provision GitHub, Vercel, Neon, or Sleeper tokens. Assume the commissioner already connected those.
+todos: []
+isProject: false
 ---
 
 # Roulette standings — phase 2

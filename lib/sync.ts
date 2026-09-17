@@ -1,4 +1,4 @@
-import { HOSTED_LEAGUES } from "@/lib/leagues";
+import { listHostedLeagues } from "@/lib/hosted";
 import { completedNflWeek } from "@/lib/nfl-final";
 import { getPrisma, hasDatabase } from "@/lib/prisma";
 import {
@@ -18,25 +18,10 @@ import {
   settingNumber,
 } from "@/lib/sleeper";
 
-export async function syncAll(): Promise<{
-  leagues: number;
-  skipped: boolean;
-  week: number | null;
-  throughWeek: number;
-}> {
-  const state = await getNflState();
-  const displayWeek = nflDisplayWeek(state);
-  const { throughWeek } = await completedNflWeek(displayWeek);
-
-  if (!hasDatabase()) {
-    return {
-      leagues: HOSTED_LEAGUES.length,
-      skipped: true,
-      week: displayWeek,
-      throughWeek,
-    };
-  }
-
+async function touchMeta(
+  displayWeek: number,
+  season: string | null,
+) {
   const prisma = getPrisma();
   await prisma.appMeta.upsert({
     where: { id: 1 },
@@ -44,16 +29,40 @@ export async function syncAll(): Promise<{
       id: 1,
       lastSyncedAt: new Date(),
       nflWeek: displayWeek,
-      nflSeason: state.season ?? null,
+      nflSeason: season,
     },
     update: {
       lastSyncedAt: new Date(),
       nflWeek: displayWeek,
-      nflSeason: state.season ?? null,
+      nflSeason: season,
     },
   });
+}
 
-  for (const hosted of HOSTED_LEAGUES) {
+export async function syncAll(): Promise<{
+  leagues: number;
+  skipped: boolean;
+  week: number | null;
+  throughWeek: number;
+}> {
+  const hostedLeagues = await listHostedLeagues();
+  const state = await getNflState();
+  const displayWeek = nflDisplayWeek(state);
+  const { throughWeek } = await completedNflWeek(displayWeek);
+
+  if (!hasDatabase()) {
+    return {
+      leagues: hostedLeagues.length,
+      skipped: true,
+      week: displayWeek,
+      throughWeek,
+    };
+  }
+
+  const prisma = getPrisma();
+  await touchMeta(displayWeek, state.season ?? null);
+
+  for (const hosted of hostedLeagues) {
     const [league, users, rosters] = await Promise.all([
       getLeague(hosted.sleeperLeagueId),
       getLeagueUsers(hosted.sleeperLeagueId),
@@ -154,11 +163,76 @@ export async function syncAll(): Promise<{
   }
 
   return {
-    leagues: HOSTED_LEAGUES.length,
+    leagues: hostedLeagues.length,
     skipped: false,
     week: displayWeek,
     throughWeek,
   };
+}
+
+/** Current-week Sleeper matchups only. */
+export async function syncLiveScores(): Promise<{
+  leagues: number;
+  skipped: boolean;
+  week: number | null;
+}> {
+  const hostedLeagues = await listHostedLeagues();
+  if (!hasDatabase()) {
+    return { leagues: hostedLeagues.length, skipped: true, week: null };
+  }
+  const prisma = getPrisma();
+  const state = await getNflState();
+  const week = nflDisplayWeek(state);
+  const season = state.season ?? null;
+  const dbLeagues = await prisma.league.findMany({ include: { teams: true } });
+  if (dbLeagues.length === 0) {
+    return { leagues: 0, skipped: true, week };
+  }
+
+  await Promise.all(
+    dbLeagues.map(async (league) => {
+      const playoffWeekStart = league.playoffWeekStart ?? 15;
+      if (week < 1 || week >= playoffWeekStart) return;
+      const matchups = await getMatchups(league.sleeperLeagueId, week).catch(() => []);
+      const sides: MatchupSide[] = matchups.map((matchup) => ({
+        rosterId: matchup.roster_id,
+        points: liveMatchupPoints(matchup),
+        matchupId: matchup.matchup_id ?? null,
+      }));
+      const results = computeRouletteWeek(sides);
+      const teamByRoster = new Map(league.teams.map((team) => [team.sleeperRosterId, team]));
+      await Promise.all(
+        results.map((result) => {
+          const team = teamByRoster.get(result.rosterId);
+          if (!team) return null;
+          const matchupId =
+            sides.find((side) => side.rosterId === result.rosterId)?.matchupId ?? null;
+          return prisma.weeklyScore.upsert({
+            where: { teamId_week: { teamId: team.id, week } },
+            create: {
+              teamId: team.id,
+              week,
+              points: result.points,
+              matchupId,
+              won: result.won,
+              tied: result.tied,
+              roulette: result.roulette,
+            },
+            update: {
+              points: result.points,
+              matchupId,
+              won: result.won,
+              tied: result.tied,
+              roulette: result.roulette,
+            },
+          });
+        }),
+      );
+    }),
+  );
+
+  await touchMeta(week, season);
+  return { leagues: dbLeagues.length, skipped: false, week };
 }
 
 export async function markGeneratedImages(week: number, season: string) {
@@ -186,10 +260,11 @@ export async function markGeneratedImages(week: number, season: string) {
 
 export async function imagesExistForWeek(week: number, season: string): Promise<boolean> {
   if (!hasDatabase()) return false;
+  const hosted = await listHostedLeagues();
   const count = await getPrisma().generatedImage.count({
     where: { week, season },
   });
-  return count >= HOSTED_LEAGUES.length;
+  return count >= hosted.length;
 }
 
 export { loadHostedStandings, loadLeagueStandings };

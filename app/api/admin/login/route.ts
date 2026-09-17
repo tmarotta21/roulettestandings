@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=1", request.url), 303);
   }
   const token = expectedAdminToken();
-  const res = NextResponse.redirect(new URL("/", request.url), 303);
+  const res = NextResponse.redirect(new URL("/admin", request.url), 303);
   if (token) {
     res.cookies.set(ADMIN_COOKIE, token, {
       httpOnly: true,

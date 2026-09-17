@@ -17,4 +17,4 @@ A week is final when every event has `status.type.completed === true` (or equiva
 - Schedule: hourly `0 2-7 * * 2` UTC (Monday evening through early Tuesday ET).
 - If the week is not final, or images for that week already exist, no-op.
 - On final: sync matchups, compute roulette, generate/store PNGs for every hosted league.
-- Phase 1 does not post to Sleeper chat. Fail closed to dashboard download.
+- Chat upload is fail-closed. Do not post to Sleeper league chat unless the commissioner has explicitly approved sending messages **and** `SLEEPER_CHAT_POST=1` plus a valid `SLEEPER_TOKEN` are set. Missing/expired token or no approval → dashboard Download only. Never send a test message to a live league chat.

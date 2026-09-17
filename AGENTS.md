@@ -1,7 +1,7 @@
 # Roulette Standings
 
 Phase 1: commissioner dashboard, roulette engine, square PNG download, Monday cron.
-Phase 2 (later): public username gate, league toggle, matchups/schedule/bracket/history, admin league-ID form, Sync button, Sleeper chat upload.
+Phase 2: public username gate, league toggle, matchups/schedule/bracket/history, admin league-ID form, Sync button. Sleeper chat upload stays fail-closed until the commissioner explicitly approves sending messages in league chats.
 
 ## Scoring
 

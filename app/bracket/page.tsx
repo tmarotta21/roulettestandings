@@ -1,11 +1,12 @@
-export default function BracketPage() {
-  return (
-    <div className="space-y-3">
-      <h1 className="text-2xl font-semibold">Playoff bracket</h1>
-      <p className="text-sm text-emerald-100/70">
-        Phase 2: Sleeper `getWinnersBracket` + tournamentleagues
-        `components/playoff-bracket.tsx`.
-      </p>
-    </div>
-  );
+import { redirect } from "next/navigation";
+import { getUsernameCookie } from "@/lib/username";
+
+export const dynamic = "force-dynamic";
+
+export default async function BracketPage() {
+  const username = await getUsernameCookie();
+  if (username) {
+    redirect(`/u/${encodeURIComponent(username)}?tab=bracket`);
+  }
+  redirect("/?change=1");
 }
