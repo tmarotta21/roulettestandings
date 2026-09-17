@@ -193,18 +193,28 @@ export async function getUserLeagues(
   return data ?? [];
 }
 
+/** Sleeper uses `"0"` (not null) when a league has no predecessor. */
+export function normalizeSleeperLeagueId(
+  value: string | null | undefined,
+): string | null {
+  if (typeof value !== "string") return null;
+  const id = value.trim();
+  if (!id || id === "0") return null;
+  return id;
+}
+
 export async function walkPreviousLeagues(
   leagueId: string,
   maxSeasons = 8,
 ): Promise<SleeperLeague[]> {
   const leagues: SleeperLeague[] = [];
   const seen = new Set<string>();
-  let cursor: string | null = leagueId;
+  let cursor = normalizeSleeperLeagueId(leagueId);
   while (cursor && !seen.has(cursor) && leagues.length < maxSeasons) {
     seen.add(cursor);
     const league = await getLeague(cursor);
     leagues.push(league);
-    cursor = league.previous_league_id || null;
+    cursor = normalizeSleeperLeagueId(league.previous_league_id);
   }
   return leagues;
 }

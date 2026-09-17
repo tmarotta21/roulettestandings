@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin";
 import { slugifyLeagueName } from "@/lib/leagues";
 import { getPrisma, hasDatabase } from "@/lib/prisma";
-import { getLeague, settingNumber } from "@/lib/sleeper";
+import { getLeague, normalizeSleeperLeagueId, settingNumber } from "@/lib/sleeper";
 import { syncAll } from "@/lib/sync";
 
 export const runtime = "nodejs";
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
           name: league.name,
           slug: slugifyLeagueName(league.name),
           season: league.season,
-          previousSleeperLeagueId: league.previous_league_id ?? null,
+          previousSleeperLeagueId: normalizeSleeperLeagueId(league.previous_league_id),
           playoffWeekStart,
           playoffTeams,
           totalRosters: league.total_rosters ?? 12,
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
           name: league.name,
           slug: slugifyLeagueName(league.name),
           season: league.season,
-          previousSleeperLeagueId: league.previous_league_id ?? null,
+          previousSleeperLeagueId: normalizeSleeperLeagueId(league.previous_league_id),
           playoffWeekStart,
           playoffTeams,
           totalRosters: league.total_rosters ?? 12,
