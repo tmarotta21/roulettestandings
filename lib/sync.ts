@@ -16,6 +16,7 @@ import {
   liveMatchupPoints,
   nflDisplayWeek,
   settingNumber,
+  normalizeSleeperLeagueId,
 } from "@/lib/sleeper";
 
 async function touchMeta(
@@ -77,7 +78,7 @@ export async function syncAll(): Promise<{
         name: hosted.name,
         slug: hosted.slug,
         season: league.season,
-        previousSleeperLeagueId: league.previous_league_id ?? null,
+        previousSleeperLeagueId: normalizeSleeperLeagueId(league.previous_league_id),
         playoffWeekStart,
         playoffTeams,
         totalRosters: league.total_rosters ?? rosters.length,
@@ -87,7 +88,7 @@ export async function syncAll(): Promise<{
         name: hosted.name,
         slug: hosted.slug,
         season: league.season,
-        previousSleeperLeagueId: league.previous_league_id ?? null,
+        previousSleeperLeagueId: normalizeSleeperLeagueId(league.previous_league_id),
         playoffWeekStart,
         playoffTeams,
         totalRosters: league.total_rosters ?? rosters.length,

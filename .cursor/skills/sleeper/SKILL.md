@@ -25,7 +25,7 @@ Base: `https://api.sleeper.app/v1`. Always `cache: "no-store"`. Throw `SleeperEr
 | `getWinnersBracket` | `/league/{id}/winners_bracket` |
 | `getUser` | `/user/{usernameOrId}` |
 | `getUserLeagues` | `/user/{userId}/leagues/nfl/{season}` |
-| `walkPreviousLeagues` | follow `previous_league_id` with a seen-set |
+| `walkPreviousLeagues` | follow `previous_league_id` with a seen-set. Use `normalizeSleeperLeagueId` so `"0"` / empty means no predecessor (never fetch `/league/0`). |
 
 ## Points and pairing
 
