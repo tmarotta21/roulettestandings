@@ -14,7 +14,12 @@ export async function listHostedLeagues(): Promise<HostedLeagueRecord[]> {
   const [rows, excluded] = await Promise.all([
     prisma.league.findMany({
       orderBy: { createdAt: "asc" },
-      select: { sleeperLeagueId: true, slug: true, name: true },
+      select: {
+        sleeperLeagueId: true,
+        slug: true,
+        name: true,
+        autoChatPostEnabled: true,
+      },
     }),
     prisma.excludedLeague.findMany({
       select: { sleeperLeagueId: true },

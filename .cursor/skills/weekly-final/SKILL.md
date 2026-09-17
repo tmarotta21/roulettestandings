@@ -18,3 +18,4 @@ A week is final when every event has `status.type.completed === true` (or equiva
 - If the week is not final, or images for that week already exist, no-op.
 - On final: sync matchups, compute roulette, generate/store PNGs for every hosted league.
 - Chat upload is fail-closed. Do not post to Sleeper league chat unless the commissioner has explicitly approved sending messages **and** `SLEEPER_CHAT_POST=1` plus a valid `SLEEPER_TOKEN` are set. Missing/expired token or no approval → dashboard Download only. Never send a test message to a live league chat.
+- Even when the master switch is on, cron only auto-posts to leagues with `League.autoChatPostEnabled = true` (the "Auto-post" toggle on `/admin`, off by default). The manual "Post to Sleeper" button ignores this per-league toggle.

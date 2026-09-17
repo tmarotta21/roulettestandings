@@ -26,6 +26,7 @@ model League {
   playoffWeekStart        Int              @default(15)
   playoffTeams            Int              @default(6)
   totalRosters            Int              @default(12)
+  autoChatPostEnabled     Boolean          @default(false)
   lastSyncedAt            DateTime?
   createdAt               DateTime         @default(now())
   updatedAt               DateTime         @updatedAt
