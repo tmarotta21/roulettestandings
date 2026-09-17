@@ -7,13 +7,17 @@ import { Button, buttonVariants } from "@/components/ui/button";
 export function AdminLeagueActions({
   sleeperLeagueId,
   leagueName,
+  autoChatPostEnabled,
 }: {
   sleeperLeagueId: string;
   leagueName: string;
+  autoChatPostEnabled: boolean;
 }) {
   const [preview, setPreview] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [autoPost, setAutoPost] = useState(autoChatPostEnabled);
+  const [toggleBusy, setToggleBusy] = useState(false);
 
   async function postToSleeper() {
     if (busy) return;
@@ -34,6 +38,32 @@ export function AdminLeagueActions({
     }
   }
 
+  async function toggleAutoPost() {
+    if (toggleBusy) return;
+    const next = !autoPost;
+    setToggleBusy(true);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/admin/leagues", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sleeperLeagueId, autoChatPostEnabled: next }),
+      });
+      const payload = (await response.json()) as {
+        message?: string;
+        error?: string;
+        autoChatPostEnabled?: boolean;
+      };
+      if (!response.ok) throw new Error(payload.error ?? "Could not update auto-post.");
+      setAutoPost(payload.autoChatPostEnabled ?? next);
+      setMessage(payload.message ?? null);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Could not update auto-post.");
+    } finally {
+      setToggleBusy(false);
+    }
+  }
+
   return (
     <div className="flex shrink-0 flex-col items-end gap-1">
       <div className="flex flex-wrap items-center justify-end gap-2">
@@ -47,6 +77,22 @@ export function AdminLeagueActions({
           title="Send this league's standings PNG to Sleeper chat when posting is approved"
         >
           {busy ? "Posting" : "Post to Sleeper"}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          aria-pressed={autoPost}
+          className={
+            autoPost
+              ? "border-emerald-400/60 bg-emerald-400/10 text-emerald-100"
+              : "border-white/20 text-emerald-50"
+          }
+          onClick={toggleAutoPost}
+          disabled={toggleBusy}
+          title="Automatically post standings to this league's Sleeper chat after Monday cron, once posting is approved"
+        >
+          {toggleBusy ? "Saving" : autoPost ? "Auto-post: on" : "Auto-post: off"}
         </Button>
         <Button
           type="button"

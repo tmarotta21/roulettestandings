@@ -52,10 +52,11 @@ export async function GET(request: NextRequest) {
     const sync = await syncAll();
     await markGeneratedImages(week, season);
     const hosted = await listHostedLeagues();
+    const autoPostLeagues = hosted.filter((league) => league.autoChatPostEnabled);
     const chat = await maybePostWeeklyImages({
       week,
       season,
-      sleeperLeagueIds: hosted.map((league) => league.sleeperLeagueId),
+      sleeperLeagueIds: autoPostLeagues.map((league) => league.sleeperLeagueId),
     });
     return NextResponse.json({
       ok: true,

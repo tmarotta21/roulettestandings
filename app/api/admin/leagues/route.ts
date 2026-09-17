@@ -76,3 +76,40 @@ export async function DELETE(request: Request) {
   });
   return NextResponse.json({ message: "Excluded from standings." });
 }
+
+export async function PATCH(request: Request) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!hasDatabase()) {
+    return NextResponse.json({ error: "DATABASE_URL is not set." }, { status: 400 });
+  }
+  const body = (await request.json()) as {
+    sleeperLeagueId?: string;
+    autoChatPostEnabled?: boolean;
+  };
+  const sleeperLeagueId = body.sleeperLeagueId?.trim();
+  if (!sleeperLeagueId) {
+    return NextResponse.json({ error: "League ID required." }, { status: 400 });
+  }
+  if (typeof body.autoChatPostEnabled !== "boolean") {
+    return NextResponse.json({ error: "autoChatPostEnabled must be a boolean." }, { status: 400 });
+  }
+  try {
+    const league = await getPrisma().league.update({
+      where: { sleeperLeagueId },
+      data: { autoChatPostEnabled: body.autoChatPostEnabled },
+    });
+    return NextResponse.json({
+      message: body.autoChatPostEnabled
+        ? `Auto-post enabled for ${league.name}.`
+        : `Auto-post disabled for ${league.name}.`,
+      autoChatPostEnabled: league.autoChatPostEnabled,
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "League not synced yet. Run Sync first." },
+      { status: 404 },
+    );
+  }
+}

@@ -35,6 +35,7 @@ export type HostedLeagueRecord = {
   slug: string;
   name: string;
   fromSeed: boolean;
+  autoChatPostEnabled: boolean;
 };
 
 export function hostedLeagueIds(): string[] {
@@ -52,7 +53,12 @@ export function isSeedLeague(sleeperLeagueId: string): boolean {
 /** Seed first, then extra DB rows. DB names/slugs win when both exist. */
 export function mergeHostedLeagues(
   seed: readonly { sleeperLeagueId: string; slug: string; name: string }[],
-  db: { sleeperLeagueId: string; slug: string; name: string }[],
+  db: {
+    sleeperLeagueId: string;
+    slug: string;
+    name: string;
+    autoChatPostEnabled?: boolean;
+  }[],
   excludedIds: Iterable<string> = [],
 ): HostedLeagueRecord[] {
   const excluded = new Set(excludedIds);
@@ -70,6 +76,7 @@ export function mergeHostedLeagues(
       slug: overlay?.slug || row.slug,
       name: overlay?.name || row.name,
       fromSeed: true,
+      autoChatPostEnabled: overlay?.autoChatPostEnabled ?? false,
     });
     seen.add(row.sleeperLeagueId);
   }
@@ -80,6 +87,7 @@ export function mergeHostedLeagues(
       slug: row.slug || slugifyLeagueName(row.name),
       name: row.name,
       fromSeed: false,
+      autoChatPostEnabled: row.autoChatPostEnabled ?? false,
     });
   }
   return result;

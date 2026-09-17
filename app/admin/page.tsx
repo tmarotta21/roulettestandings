@@ -17,6 +17,7 @@ export default async function AdminPage() {
   await maybeRefresh();
 
   const hosted = await listHostedLeagues();
+  const hostedById = new Map(hosted.map((league) => [league.sleeperLeagueId, league]));
   const chat = sleeperChatDecision();
   let boards: Awaited<ReturnType<typeof loadHostedStandings>> = [];
   let error: string | null = null;
@@ -93,6 +94,7 @@ export default async function AdminPage() {
               <AdminLeagueActions
                 sleeperLeagueId={board.sleeperLeagueId}
                 leagueName={board.name}
+                autoChatPostEnabled={hostedById.get(board.sleeperLeagueId)?.autoChatPostEnabled ?? false}
               />
             </div>
           ))}

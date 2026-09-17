@@ -35,3 +35,4 @@ To enable later (do not turn this on without approval):
 2. Set `SLEEPER_TOKEN` in Vercel env (never commit it).
 3. Set `SLEEPER_CHAT_POST=1` only after approving live league-chat sends.
 4. If the token is missing or expired, cron still finishes and Download on `/admin` remains the path into chat.
+5. `SLEEPER_CHAT_POST`/`SLEEPER_TOKEN` are the master switch for all leagues. Monday cron only auto-posts to leagues with their own "Auto-post" toggle turned on in `/admin` (off by default per league). The manual "Post to Sleeper" button ignores this toggle and works per-league whenever the master switch is on.

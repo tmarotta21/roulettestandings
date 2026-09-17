@@ -53,6 +53,27 @@ test("mergeHostedLeagues drops excluded seed and extra leagues", () => {
   assert.equal(merged.length, HOSTED_LEAGUES.length - 1);
 });
 
+test("mergeHostedLeagues carries autoChatPostEnabled from the DB row, defaulting false", () => {
+  const merged = mergeHostedLeagues(HOSTED_LEAGUES, [
+    {
+      sleeperLeagueId: HOSTED_LEAGUES[0].sleeperLeagueId,
+      slug: HOSTED_LEAGUES[0].slug,
+      name: HOSTED_LEAGUES[0].name,
+      autoChatPostEnabled: true,
+    },
+    {
+      sleeperLeagueId: "999",
+      slug: "extra",
+      name: "Extra League",
+      autoChatPostEnabled: true,
+    },
+  ]);
+  assert.equal(merged[0]?.autoChatPostEnabled, true);
+  assert.equal(merged[1]?.autoChatPostEnabled, false);
+  const extra = merged.find((row) => row.sleeperLeagueId === "999");
+  assert.equal(extra?.autoChatPostEnabled, true);
+});
+
 test("intersectHostedLeagueIds keeps only hosted ids", () => {
   const hosted = HOSTED_LEAGUES.map((row) => row.sleeperLeagueId);
   const matched = intersectHostedLeagueIds(
