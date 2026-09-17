@@ -1,6 +1,6 @@
 # Roulette Standings
 
-Commissioner dashboard for Sleeper roulette standings. Phase 1 generates a square PNG (WIN / ROU / PTS / PF) after the NFL week is final. Paste it into league chat; automated Sleeper chat upload is phase 2.
+Public roulette standings for hosted Sleeper leagues, plus a PIN-gated commissioner dashboard.
 
 ## Scoring
 
@@ -14,10 +14,23 @@ Commissioner dashboard for Sleeper roulette standings. Phase 1 generates a squar
 
 ```bash
 cp .env.example .env.local
-# set ADMIN_PIN
+# set ADMIN_PIN (and DATABASE_URL from `vercel env pull` for admin registry / sync)
 npm install
 npm test
 npm run dev
 ```
 
-Open `/login`, then download PNGs from `/`.
+Open `/`, enter a Sleeper username, then use league toggle, year history, matchups, Weekly, Bracket, Download, and Sync.
+
+Commissioner: `/login` → `/admin` to add/remove extra league IDs. The five seed leagues stay as fallback.
+
+## Sleeper chat upload
+
+Monday cron generates PNGs. Automated posts to Sleeper league chat stay **off** until you explicitly approve sending messages.
+
+To enable later (do not turn this on without approval):
+
+1. Log in at sleeper.com → DevTools → Network → `graphql` → copy the `authorization` header JWT.
+2. Set `SLEEPER_TOKEN` in Vercel env (never commit it).
+3. Set `SLEEPER_CHAT_POST=1` only after approving live league-chat sends.
+4. If the token is missing or expired, cron still finishes and Download on `/admin` remains the path into chat.

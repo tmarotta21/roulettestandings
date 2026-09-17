@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { expectedAdminToken } from "@/lib/admin";
 import { imagesExistForWeek, markGeneratedImages, syncAll } from "@/lib/sync";
 import { isNflWeekFinal } from "@/lib/nfl-final";
+import { listHostedLeagues } from "@/lib/hosted";
+import { maybePostWeeklyImages } from "@/lib/sleeper-chat";
 import { getNflState, nflDisplayWeek } from "@/lib/sleeper";
 
 export const runtime = "nodejs";
@@ -49,13 +51,20 @@ export async function GET(request: NextRequest) {
 
     const sync = await syncAll();
     await markGeneratedImages(week, season);
+    const hosted = await listHostedLeagues();
+    const chat = await maybePostWeeklyImages({
+      week,
+      season,
+      sleeperLeagueIds: hosted.map((league) => league.sleeperLeagueId),
+    });
     return NextResponse.json({
       ok: true,
       skipped: false,
       week,
       season,
       sync,
-      message: "Standings images ready. Download from the dashboard (Sleeper chat post is phase 2).",
+      chat,
+      message: chat.message,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Cron failed";

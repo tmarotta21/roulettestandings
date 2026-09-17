@@ -6,6 +6,7 @@ import {
   markPlayoffs,
   rankStandings,
   rouletteCutoffSize,
+  weeklyStandingsPts,
   type MatchupSide,
 } from "./roulette";
 
@@ -31,6 +32,20 @@ test("H2H winner gets 2 matchup points and loser 0", () => {
   assert.equal(one?.matchupPts, 2);
   assert.equal(two?.lost, true);
   assert.equal(two?.matchupPts, 0);
+});
+
+test("weekly standings PTS is matchup points plus ROU (0 to +3)", () => {
+  const week = computeRouletteWeek([
+    side(1, 120, 1),
+    side(2, 100, 1),
+    side(3, 90, 2),
+    side(4, 80, 2),
+  ]);
+  const byId = new Map(week.map((row) => [row.rosterId, weeklyStandingsPts(row)]));
+  assert.equal(byId.get(1), 3);
+  assert.equal(byId.get(2), 1);
+  assert.equal(byId.get(3), 2);
+  assert.equal(byId.get(4), 0);
 });
 
 test("H2H tie gives both teams 1 matchup point and no WIN", () => {

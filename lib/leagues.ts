@@ -30,12 +30,67 @@ export const SHADYNASTY_2025_ID = "1180599038981910528";
 
 export type HostedLeague = (typeof HOSTED_LEAGUES)[number];
 
+export type HostedLeagueRecord = {
+  sleeperLeagueId: string;
+  slug: string;
+  name: string;
+  fromSeed: boolean;
+};
+
 export function hostedLeagueIds(): string[] {
   return HOSTED_LEAGUES.map((league) => league.sleeperLeagueId);
 }
 
 export function hostedById(sleeperLeagueId: string): HostedLeague | undefined {
   return HOSTED_LEAGUES.find((league) => league.sleeperLeagueId === sleeperLeagueId);
+}
+
+export function isSeedLeague(sleeperLeagueId: string): boolean {
+  return Boolean(hostedById(sleeperLeagueId));
+}
+
+/** Seed first, then extra DB rows. DB names/slugs win when both exist. */
+export function mergeHostedLeagues(
+  seed: readonly { sleeperLeagueId: string; slug: string; name: string }[],
+  db: { sleeperLeagueId: string; slug: string; name: string }[],
+  excludedIds: Iterable<string> = [],
+): HostedLeagueRecord[] {
+  const excluded = new Set(excludedIds);
+  const dbById = new Map(db.map((row) => [row.sleeperLeagueId, row]));
+  const result: HostedLeagueRecord[] = [];
+  const seen = new Set<string>();
+  for (const row of seed) {
+    if (excluded.has(row.sleeperLeagueId)) {
+      seen.add(row.sleeperLeagueId);
+      continue;
+    }
+    const overlay = dbById.get(row.sleeperLeagueId);
+    result.push({
+      sleeperLeagueId: row.sleeperLeagueId,
+      slug: overlay?.slug || row.slug,
+      name: overlay?.name || row.name,
+      fromSeed: true,
+    });
+    seen.add(row.sleeperLeagueId);
+  }
+  for (const row of db) {
+    if (seen.has(row.sleeperLeagueId) || excluded.has(row.sleeperLeagueId)) continue;
+    result.push({
+      sleeperLeagueId: row.sleeperLeagueId,
+      slug: row.slug || slugifyLeagueName(row.name),
+      name: row.name,
+      fromSeed: false,
+    });
+  }
+  return result;
+}
+
+export function intersectHostedLeagueIds(
+  userLeagueIds: string[],
+  hostedIds: Iterable<string>,
+): string[] {
+  const hosted = new Set(hostedIds);
+  return userLeagueIds.filter((id) => hosted.has(id));
 }
 
 export function slugifyLeagueName(name: string): string {

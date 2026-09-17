@@ -98,6 +98,12 @@ export function computeRouletteWeek(sides: MatchupSide[]): WeekResult[] {
   return Array.from(byRoster.values());
 }
 
+export function weeklyStandingsPts(
+  result: Pick<WeekResult, "matchupPts" | "roulette">,
+): number {
+  return result.matchupPts + (result.roulette ? 1 : 0);
+}
+
 export function computeRouletteSeason(weeks: MatchupSide[][]): SeasonTotals[] {
   const totals = new Map<number, SeasonTotals>();
 

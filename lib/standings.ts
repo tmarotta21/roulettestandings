@@ -1,10 +1,13 @@
-import { hostedById, HOSTED_LEAGUES, slugifyLeagueName } from "@/lib/leagues";
+import { listHostedLeagues } from "@/lib/hosted";
+import { slugifyLeagueName } from "@/lib/leagues";
 import { completedNflWeek } from "@/lib/nfl-final";
 import {
   computeRouletteSeason,
+  computeRouletteWeek,
   markPlayoffs,
   rankStandings,
   regularSeasonWeeks,
+  weeklyStandingsPts,
   type MatchupSide,
 } from "@/lib/roulette";
 import { teamTint } from "@/lib/colors";
@@ -28,6 +31,7 @@ export type StandingRow = {
   ties: number;
   rou: number;
   pts: number;
+  last: number;
   pf: number;
   inPlayoffs: boolean;
   tint: string;
@@ -47,7 +51,7 @@ export type LeagueStandings = {
   rows: StandingRow[];
 };
 
-function usernameForRoster(
+export function usernameForRoster(
   rosterId: number,
   ownerByRoster: Map<number, string>,
   users: SleeperLeagueUser[],
@@ -92,13 +96,22 @@ export async function loadLeagueStandings(
   );
   const seasonWeeks = matchupWeeks.map(sidesFromMatchups);
   const ranked = markPlayoffs(rankStandings(computeRouletteSeason(seasonWeeks)), playoffTeams);
+  const lastWeek = seasonWeeks.at(-1);
+  const lastByRoster = new Map(
+    (lastWeek ? computeRouletteWeek(lastWeek) : []).map((result) => [
+      result.rosterId,
+      weeklyStandingsPts(result),
+    ]),
+  );
 
   const ownerByRoster = new Map<number, string>();
   for (const roster of rosters) {
     if (roster.owner_id) ownerByRoster.set(roster.roster_id, roster.owner_id);
   }
 
-  const hosted = hostedById(sleeperLeagueId);
+  const hosted = (await listHostedLeagues()).find(
+    (row) => row.sleeperLeagueId === sleeperLeagueId,
+  );
   return {
     sleeperLeagueId,
     name: hosted?.name ?? league.name,
@@ -119,6 +132,7 @@ export async function loadLeagueStandings(
         ties: row.ties,
         rou: row.rou,
         pts: row.pts,
+        last: lastByRoster.get(row.rosterId) ?? 0,
         pf: row.pf,
         inPlayoffs: row.inPlayoffs,
         tint: teamTint(username),
@@ -128,7 +142,8 @@ export async function loadLeagueStandings(
 }
 
 export async function loadHostedStandings(): Promise<LeagueStandings[]> {
+  const hosted = await listHostedLeagues();
   return Promise.all(
-    HOSTED_LEAGUES.map((league) => loadLeagueStandings(league.sleeperLeagueId)),
+    hosted.map((league) => loadLeagueStandings(league.sleeperLeagueId)),
   );
 }

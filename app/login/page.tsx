@@ -15,7 +15,7 @@ export default async function LoginPage({
         <h1 className="text-2xl font-semibold">Commissioner login</h1>
         <p className="mt-2 text-sm text-emerald-100/70">
           {adminPinConfigured()
-            ? "Enter the admin PIN to download roulette standings."
+            ? "Enter the admin PIN to manage hosted leagues and download standings."
             : "Set ADMIN_PIN in the environment, then come back."}
         </p>
       </div>

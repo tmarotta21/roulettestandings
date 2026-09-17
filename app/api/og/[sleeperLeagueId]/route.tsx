@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { standingsImageResponse } from "@/lib/standings-image";
 import { loadLeagueStandings } from "@/lib/standings";
-import { hostedById } from "@/lib/leagues";
+import { isAllowedLeague } from "@/lib/hosted";
 
 export const runtime = "nodejs";
 
@@ -10,7 +10,7 @@ export async function GET(
   context: { params: Promise<{ sleeperLeagueId: string }> },
 ) {
   const { sleeperLeagueId } = await context.params;
-  if (!hostedById(sleeperLeagueId)) {
+  if (!(await isAllowedLeague(sleeperLeagueId))) {
     return NextResponse.json({ error: "Unknown league" }, { status: 404 });
   }
   try {

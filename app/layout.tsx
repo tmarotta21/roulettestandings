@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
+import { isAdmin } from "@/lib/admin";
+import { getUsernameCookie } from "@/lib/username";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,14 +17,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Roulette Standings",
-  description: "Commissioner dashboard for Sleeper roulette standings.",
+  description: "Public roulette standings for hosted Sleeper leagues.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [username, admin] = await Promise.all([getUsernameCookie(), isAdmin()]);
   return (
     <html
       lang="en"
@@ -30,18 +34,18 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-[#07140c] text-white">
         <header className="border-b border-white/10">
           <nav className="mx-auto flex w-full max-w-5xl items-center gap-4 px-4 py-3 text-sm">
-            <a href="/" className="font-semibold text-emerald-100">
+            <Link href="/" className="font-semibold text-emerald-100">
               Roulette
-            </a>
-            <a href="/admin" className="text-emerald-100/70 hover:text-emerald-50">
-              Admin
-            </a>
-            <a href="/weekly" className="text-emerald-100/70 hover:text-emerald-50">
-              Weekly
-            </a>
-            <a href="/bracket" className="text-emerald-100/70 hover:text-emerald-50">
-              Bracket
-            </a>
+            </Link>
+            <span className="ml-auto text-emerald-100/60" suppressHydrationWarning>
+              {username ? (
+                <Link href="/?change=1" className="hover:text-emerald-50">
+                  {username}
+                </Link>
+              ) : admin ? (
+                "commissioner"
+              ) : null}
+            </span>
           </nav>
         </header>
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
