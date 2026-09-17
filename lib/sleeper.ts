@@ -89,6 +89,21 @@ export type SleeperNflState = {
   display_week?: number;
 };
 
+export type SleeperNflPlayer = {
+  player_id?: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  position?: string | null;
+  team?: string | null;
+};
+
+export type SleeperProjection = {
+  player_id?: string;
+  stats?: Record<string, number> | null;
+};
+
+const PLAYERS_REVALIDATE_SECONDS = 60 * 60 * 24;
+
 export function asStringIds(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is string => typeof item === "string" && item !== "0");
@@ -205,7 +220,7 @@ export function normalizeSleeperLeagueId(
 
 export async function walkPreviousLeagues(
   leagueId: string,
-  maxSeasons = 8,
+  maxSeasons = 20,
 ): Promise<SleeperLeague[]> {
   const leagues: SleeperLeague[] = [];
   const seen = new Set<string>();
@@ -239,4 +254,39 @@ export function nflDisplayWeek(state: SleeperNflState): number {
 export function sleeperAvatarUrl(avatar?: string | null): string | null {
   if (!avatar) return null;
   return `https://sleepercdn.com/avatars/thumbs/${avatar}`;
+}
+
+export async function getNflPlayers(): Promise<Record<string, SleeperNflPlayer>> {
+  const res = await fetch(`${SLEEPER_BASE}/players/nfl`, {
+    headers: { Accept: "application/json" },
+    next: { revalidate: PLAYERS_REVALIDATE_SECONDS },
+  });
+  if (!res.ok) {
+    throw new SleeperError(`Sleeper /players/nfl failed (${res.status})`);
+  }
+  const data = (await res.json()) as Record<string, SleeperNflPlayer> | null;
+  return data ?? {};
+}
+
+function projectionsFromPayload(
+  data: SleeperProjection[] | Record<string, SleeperProjection> | null,
+): SleeperProjection[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  return Object.entries(data).map(([playerId, row]) => ({
+    player_id: row.player_id ?? playerId,
+    stats: row.stats,
+  }));
+}
+
+export async function getWeekProjections(
+  season: string,
+  week: number,
+): Promise<SleeperProjection[]> {
+  const data = await sleeperGet<
+    SleeperProjection[] | Record<string, SleeperProjection> | null
+  >(
+    `/projections/nfl/regular/${encodeURIComponent(season)}/${week}`,
+  );
+  return projectionsFromPayload(data);
 }

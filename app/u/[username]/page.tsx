@@ -10,14 +10,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { HistoryView } from "@/components/history-view";
 import { LeagueToggle } from "@/components/league-toggle";
 import { LiveSyncButton } from "@/components/live-sync-button";
 import { MatchupTable, RoulettePts } from "@/components/matchup-table";
 import { PlayoffBracket } from "@/components/playoff-bracket";
 import { StandingsTable, parseStandingsSort } from "@/components/standings-table";
-import { isStandingsTab, StandingsTabs, type StandingsTab } from "@/components/standings-tabs";
+import {
+  isHistorySubtab,
+  isStandingsTab,
+  StandingsTabs,
+  type HistorySubtab,
+  type StandingsTab,
+} from "@/components/standings-tabs";
 import { YearSelect } from "@/components/year-select";
 import { UsernameForm } from "@/components/username-form";
+import { loadLeagueHistory } from "@/lib/history-load";
+import { ownerIdForUser } from "@/lib/history";
 import { formatPf, cn } from "@/lib/utils";
 import { maybeRefresh } from "@/lib/maybe-refresh";
 import { loadLeagueMatchups, loadWinnersBracket } from "@/lib/matchups";
@@ -26,6 +35,7 @@ import { loadLeagueStandings } from "@/lib/standings";
 import { hostedLeaguesForUser } from "@/lib/username";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function standingsPath(
   username: string,
@@ -33,6 +43,7 @@ function standingsPath(
   tab: StandingsTab,
   week?: number,
   sort?: { column: string; direction: string },
+  history?: HistorySubtab,
 ) {
   const params = new URLSearchParams();
   params.set("league", leagueId);
@@ -41,6 +52,9 @@ function standingsPath(
   if (tab === "standings" && sort) {
     params.set("sort", sort.column);
     params.set("dir", sort.direction);
+  }
+  if (tab === "history" && history && history !== "h2h") {
+    params.set("history", history);
   }
   return `/u/${encodeURIComponent(username)}?${params.toString()}`;
 }
@@ -66,6 +80,7 @@ export default async function UserStandingsPage({
     week?: string;
     sort?: string;
     dir?: string;
+    history?: string;
   }>;
 }) {
   const { username } = await params;
@@ -127,10 +142,14 @@ export default async function UserStandingsPage({
       ? requested
       : primary.sleeperLeagueId;
   const tab: StandingsTab = isStandingsTab(query.tab) ? query.tab : "standings";
+  const historySubtab: HistorySubtab = isHistorySubtab(query.history)
+    ? query.history
+    : "h2h";
   const { column, direction } = parseStandingsSort(query.sort, query.dir);
   const sort = { column, direction };
 
-  const board = await loadLeagueStandings(selectedId);
+  const standingsLeagueId = tab === "history" ? primary.sleeperLeagueId : selectedId;
+  const board = await loadLeagueStandings(standingsLeagueId);
   const maxWeek = Math.max(1, board.playoffWeekStart - 1);
   const weekParam = Number(query.week);
   const defaultWeek = Math.min(maxWeek, Math.max(1, board.throughWeek || board.week));
@@ -139,11 +158,14 @@ export default async function UserStandingsPage({
     : defaultWeek;
 
   const matchupWeek = tab === "weekly" ? selectedWeek : defaultWeek;
-  const [matchups, bracket] = await Promise.all([
-    tab === "bracket"
+  const [matchups, bracket, historySeasons] = await Promise.all([
+    tab === "bracket" || tab === "history"
       ? Promise.resolve(null)
       : loadLeagueMatchups(selectedId, matchupWeek),
     tab === "bracket" ? loadWinnersBracket(selectedId) : Promise.resolve(null),
+    tab === "history"
+      ? loadLeagueHistory(primary.sleeperLeagueId)
+      : Promise.resolve([]),
   ]);
 
   return (
@@ -174,25 +196,38 @@ export default async function UserStandingsPage({
         <LeagueToggle
           leagues={matches}
           selectedId={primary.sleeperLeagueId}
-          hrefFor={(leagueId) => standingsPath(displayName, leagueId, tab, selectedWeek, sort)}
+          hrefFor={(leagueId) =>
+            standingsPath(displayName, leagueId, tab, selectedWeek, sort, historySubtab)
+          }
         />
-        <YearSelect
-          history={history.map((league) => ({
-            leagueId: league.league_id,
-            season: league.season,
-          }))}
-          selectedId={selectedId}
-          username={displayName}
-          tab={tab}
-          week={selectedWeek}
-          sort={column}
-          dir={direction}
-        />
+        {tab === "history" ? null : (
+          <YearSelect
+            history={history.map((league) => ({
+              leagueId: league.league_id,
+              season: league.season,
+            }))}
+            selectedId={selectedId}
+            username={displayName}
+            tab={tab}
+            week={selectedWeek}
+            sort={column}
+            dir={direction}
+          />
+        )}
       </div>
 
       <StandingsTabs
         selected={tab}
-        hrefFor={(next) => standingsPath(displayName, selectedId, next, selectedWeek, sort)}
+        hrefFor={(next) =>
+          standingsPath(
+            displayName,
+            next === "history" ? primary.sleeperLeagueId : selectedId,
+            next,
+            selectedWeek,
+            sort,
+            next === "history" ? historySubtab : undefined,
+          )
+        }
       />
 
       {tab === "standings" ? (
@@ -303,6 +338,44 @@ export default async function UserStandingsPage({
         <PlayoffBracket
           matches={bracket?.matches ?? []}
           teams={bracket?.teams ?? []}
+        />
+      ) : null}
+
+      {tab === "history" ? (
+        <HistoryView
+          seasons={historySeasons}
+          viewerOwnerId={ownerIdForUser(
+            historySeasons,
+            user.user_id,
+            displayName,
+          )}
+          subtab={historySubtab}
+          subtabHrefs={{
+            h2h: standingsPath(
+              displayName,
+              primary.sleeperLeagueId,
+              "history",
+              selectedWeek,
+              sort,
+              "h2h",
+            ),
+            "all-time": standingsPath(
+              displayName,
+              primary.sleeperLeagueId,
+              "history",
+              selectedWeek,
+              sort,
+              "all-time",
+            ),
+            seasons: standingsPath(
+              displayName,
+              primary.sleeperLeagueId,
+              "history",
+              selectedWeek,
+              sort,
+              "seasons",
+            ),
+          }}
         />
       ) : null}
     </div>

@@ -11,7 +11,7 @@ Import from `@/lib/sleeper`. Do **not** add a second HTTP helper or copy `@rotor
 import { getLeague, getMatchups, getNflState } from "@/lib/sleeper";
 ```
 
-Base: `https://api.sleeper.app/v1`. Always `cache: "no-store"`. Throw `SleeperError` on non-OK.
+Base: `https://api.sleeper.app/v1`. `sleeperGet` always uses `cache: "no-store"`. Throw `SleeperError` on non-OK. `/players/nfl` is the exception (24h `next.revalidate`).
 
 ## Required helpers
 
@@ -25,7 +25,11 @@ Base: `https://api.sleeper.app/v1`. Always `cache: "no-store"`. Throw `SleeperEr
 | `getWinnersBracket` | `/league/{id}/winners_bracket` |
 | `getUser` | `/user/{usernameOrId}` |
 | `getUserLeagues` | `/user/{userId}/leagues/nfl/{season}` |
-| `walkPreviousLeagues` | follow `previous_league_id` with a seen-set. Use `normalizeSleeperLeagueId` so `"0"` / empty means no predecessor (never fetch `/league/0`). |
+| `walkPreviousLeagues` | follow `previous_league_id` with a seen-set, default `maxSeasons` 20. Use `normalizeSleeperLeagueId` so `"0"` / empty means no predecessor (never fetch `/league/0`). |
+| `getNflPlayers` | `/players/nfl` — 24h fetch cache (`next.revalidate`). Do not use `sleeperGet` (that stays `cache: "no-store"`). |
+| `getWeekProjections` | `/projections/nfl/regular/{season}/{week}` via `sleeperGet`. Accept array or player-id map. |
+
+History snapshots: walk from the **current hosted** league id (not the year dropdown). Identify managers by `owner_id`, display the latest `display_name` / `username`. Cache the assembled chain with `unstable_cache` (~5 min) in `lib/history-load.ts`. Box scores: `GET /api/boxscore?league=&week=&roster=` guarded by `isAllowedLeague`. Projected points = `scoreFromStats` in `@/lib/history`; omit when stats are missing or the product is empty.
 
 ## Points and pairing
 
