@@ -71,6 +71,7 @@ export async function maybePostWeeklyImages(_input: {
   season: string;
   sleeperLeagueIds: string[];
 }): Promise<{ posted: number; skipped: ChatSkipReason; message: string }> {
+  void _input;
   const decision = sleeperChatDecision();
   const reason = decision.reason === "ok" ? "awaiting-approval" : decision.reason;
   return {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import { isAdmin } from "@/lib/admin";
 import { getUsernameCookie } from "@/lib/username";
@@ -33,14 +34,14 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col bg-[#07140c] text-white">
         <header className="border-b border-white/10">
           <nav className="mx-auto flex w-full max-w-5xl items-center gap-4 px-4 py-3 text-sm">
-            <a href="/" className="font-semibold text-emerald-100">
+            <Link href="/" className="font-semibold text-emerald-100">
               Roulette
-            </a>
+            </Link>
             <span className="ml-auto text-emerald-100/60" suppressHydrationWarning>
               {username ? (
-                <a href="/?change=1" className="hover:text-emerald-50">
+                <Link href="/?change=1" className="hover:text-emerald-50">
                   {username}
-                </a>
+                </Link>
               ) : admin ? (
                 "commissioner"
               ) : null}

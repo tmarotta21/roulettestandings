@@ -90,6 +90,7 @@ export function AdminLeagueActions({
                 Close
               </Button>
             </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={`/api/og/${encodeURIComponent(sleeperLeagueId)}`}
               alt={`${leagueName} standings preview`}

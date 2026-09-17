@@ -1,4 +1,5 @@
 import { Download } from "lucide-react";
+import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -97,9 +98,9 @@ export default async function UserStandingsPage({
           None of your {payload.season} Sleeper leagues are hosted here for roulette
           standings.
         </p>
-        <a href="/?change=1" className="text-sm text-emerald-200 hover:underline">
+        <Link href="/?change=1" className="text-sm text-emerald-200 hover:underline">
           Try another username
-        </a>
+        </Link>
       </div>
     );
   }
