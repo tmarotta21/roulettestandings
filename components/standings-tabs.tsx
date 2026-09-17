@@ -4,12 +4,25 @@ const TABS = [
   { id: "standings", label: "Standings" },
   { id: "weekly", label: "Weekly" },
   { id: "bracket", label: "Bracket" },
+  { id: "history", label: "History" },
 ] as const;
 
 export type StandingsTab = (typeof TABS)[number]["id"];
 
 export function isStandingsTab(value: string | undefined): value is StandingsTab {
-  return value === "standings" || value === "weekly" || value === "bracket";
+  return (
+    value === "standings" ||
+    value === "weekly" ||
+    value === "bracket" ||
+    value === "history"
+  );
+}
+
+export const HISTORY_SUBTABS = ["h2h", "all-time", "seasons"] as const;
+export type HistorySubtab = (typeof HISTORY_SUBTABS)[number];
+
+export function isHistorySubtab(value: string | undefined): value is HistorySubtab {
+  return value === "h2h" || value === "all-time" || value === "seasons";
 }
 
 export function StandingsTabs({
