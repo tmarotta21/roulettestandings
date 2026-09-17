@@ -1,6 +1,6 @@
 # Roulette Standings
 
-Public roulette standings for hosted Sleeper leagues, plus a PIN-gated commissioner dashboard.
+Public roulette standings for hosted Sleeper leagues, plus a password-gated commissioner dashboard.
 
 ## Scoring
 
@@ -14,7 +14,8 @@ Public roulette standings for hosted Sleeper leagues, plus a PIN-gated commissio
 
 ```bash
 cp .env.example .env.local
-# set ADMIN_PIN (and DATABASE_URL from `vercel env pull` for admin registry / sync)
+# set ADMIN_PASSWORD (or ADMIN_PIN) and DATABASE_URL from `vercel env pull`
+# Neon may provide DATABASE_URL_UNPOOLED instead of DATABASE_URL
 npm install
 npm test
 npm run dev
@@ -22,7 +23,7 @@ npm run dev
 
 Open `/`, enter a Sleeper username, then use league toggle, year history, matchups, Weekly, Bracket, Download, and Sync.
 
-Commissioner: `/login` → `/admin` to add/remove extra league IDs. The five seed leagues stay as fallback.
+Commissioner: `/login` → `/admin` with the Vercel `ADMIN_PASSWORD` or `ADMIN_PIN`. The five seed leagues stay as fallback.
 
 ## Sleeper chat upload
 

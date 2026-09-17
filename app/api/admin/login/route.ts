@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   const form = await request.formData();
-  const pin = String(form.get("pin") ?? "");
+  const pin = String(form.get("password") ?? form.get("pin") ?? "");
   if (!pinMatches(pin)) {
     return NextResponse.redirect(new URL("/login?error=1", request.url), 303);
   }

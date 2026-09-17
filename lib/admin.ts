@@ -3,8 +3,20 @@ import { cookies } from "next/headers";
 
 export const ADMIN_COOKIE = "rs_admin";
 
+function envValue(...names: string[]): string | undefined {
+  for (const name of names) {
+    const value = process.env[name];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
+export function adminPassword(): string | undefined {
+  return envValue("ADMIN_PASSWORD", "ADMIN_PIN");
+}
+
 export function adminPinConfigured(): boolean {
-  return Boolean(process.env.ADMIN_PIN);
+  return Boolean(adminPassword());
 }
 
 function tokenForPin(pin: string): string {
@@ -12,13 +24,13 @@ function tokenForPin(pin: string): string {
 }
 
 export function expectedAdminToken(): string | null {
-  const pin = process.env.ADMIN_PIN;
+  const pin = adminPassword();
   if (!pin) return null;
   return tokenForPin(pin);
 }
 
 export function pinMatches(pin: string): boolean {
-  const expected = process.env.ADMIN_PIN;
+  const expected = adminPassword();
   if (!expected) return false;
   const a = Buffer.from(pin);
   const b = Buffer.from(expected);
@@ -39,5 +51,5 @@ export async function isAdmin(): Promise<boolean> {
 }
 
 export function currentSeason(): string {
-  return process.env.SLEEPER_SEASON ?? "2026";
+  return envValue("SLEEPER_SEASON") ?? "2026";
 }
