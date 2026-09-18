@@ -18,6 +18,7 @@ description: When and how to add tests for scoring, Sleeper, and UI. Use when ad
 
 - Scoring / standings math → `lib/roulette.test.ts` plus `lib/sleeper-reconcile.test.ts`
 - History aggregators (H2H, all-time, bracket roles, seasons grid, `scoreFromStats`) → `lib/history.test.ts`. UI must call those functions; do not re-derive records in components.
+- Viewer leagues (hosted-first toggle, History-only tab coercion, boxscore membership) → `lib/viewer-leagues.test.ts`
 - Sleeper client (`@/lib/sleeper`) → `lib/sleeper.test.ts`. Do not add a second HTTP helper.
 - After scoring or reconcile changes, run `npm run test:sleeper` locally. Do not skip the 2025 Shadynasty live net. CI does not run it.
 

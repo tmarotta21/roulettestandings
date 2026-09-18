@@ -26,7 +26,8 @@ export default async function LandingPage({
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">Roulette standings</h1>
         <p className="mt-2 text-sm text-emerald-100/70">
-          Enter your Sleeper username to see hosted roulette leagues you play in.
+          Enter your Sleeper username to see History for your Sleeper leagues.
+          Roulette standings appear when you play in a hosted league.
         </p>
       </div>
       <UsernameForm
