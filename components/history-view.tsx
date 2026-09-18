@@ -103,11 +103,13 @@ function newestSeasons(seasons: HistorySeasonSnapshot[]): HistorySeasonSnapshot[
 export function HistoryView({
   seasons,
   viewerOwnerId,
+  viewerUsername,
   subtab,
   subtabHrefs,
 }: {
   seasons: HistorySeasonSnapshot[];
   viewerOwnerId: string | null;
+  viewerUsername: string;
   subtab: HistorySubtab;
   subtabHrefs: Record<HistorySubtab, string>;
 }) {
@@ -151,6 +153,7 @@ export function HistoryView({
           managers={managers}
           managerId={selectedManagerId}
           onManagerId={setManagerId}
+          viewerUsername={viewerUsername}
         />
       ) : null}
       {subtab === "all-time" ? <AllTimePanel seasons={seasons} /> : null}
@@ -164,11 +167,13 @@ function H2hPanel({
   managers,
   managerId,
   onManagerId,
+  viewerUsername,
 }: {
   seasons: HistorySeasonSnapshot[];
   managers: { ownerId: string; username: string }[];
   managerId: string;
   onManagerId: (ownerId: string) => void;
+  viewerUsername: string;
 }) {
   const table = useMemo(() => h2hTable(managerId, seasons), [managerId, seasons]);
   const [sortColumn, setSortColumn] = useState<H2hSortColumn | null>(null);
@@ -391,6 +396,7 @@ function H2hPanel({
         season={explorerSeason}
         week={explorerWeek}
         ownerId={explorerOwnerId}
+        viewerUsername={viewerUsername}
         onSeason={setExplorerSeason}
         onWeek={setExplorerWeek}
         onOwnerId={setExplorerOwnerId}
@@ -405,6 +411,7 @@ function BoxScoreExplorer({
   season,
   week,
   ownerId,
+  viewerUsername,
   onSeason,
   onWeek,
   onOwnerId,
@@ -414,6 +421,7 @@ function BoxScoreExplorer({
   season: string;
   week: number;
   ownerId: string;
+  viewerUsername: string;
   onSeason: (season: string) => void;
   onWeek: (week: number) => void;
   onOwnerId: (ownerId: string) => void;
@@ -442,10 +450,13 @@ function BoxScoreExplorer({
     if (!leagueId || rosterId == null) return;
     const controller = new AbortController();
     const request = { leagueId, week: selectedWeek, rosterId };
-    fetch(
-      `/api/boxscore?league=${encodeURIComponent(leagueId)}&week=${selectedWeek}&roster=${rosterId}`,
-      { signal: controller.signal },
-    )
+    const params = new URLSearchParams({
+      league: leagueId,
+      week: String(selectedWeek),
+      roster: String(rosterId),
+    });
+    if (viewerUsername) params.set("username", viewerUsername);
+    fetch(`/api/boxscore?${params.toString()}`, { signal: controller.signal })
       .then(async (res) => {
         const data = (await res.json()) as { sides?: BoxScoreSideView[]; error?: string };
         if (controller.signal.aborted) return;
@@ -463,7 +474,7 @@ function BoxScoreExplorer({
         });
       });
     return () => controller.abort();
-  }, [leagueId, rosterId, selectedWeek]);
+  }, [leagueId, rosterId, selectedWeek, viewerUsername]);
 
   const matches =
     result != null &&

@@ -33,6 +33,12 @@ import { loadLeagueMatchups, loadWinnersBracket } from "@/lib/matchups";
 import { SleeperError, walkPreviousLeagues } from "@/lib/sleeper";
 import { loadLeagueStandings } from "@/lib/standings";
 import { hostedLeaguesForUser } from "@/lib/username";
+import {
+  tabForViewerLeague,
+  toggleTabForTarget,
+  viewerLeagues,
+  type ViewerTab,
+} from "@/lib/viewer-leagues";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -103,15 +109,15 @@ export default async function UserStandingsPage({
     );
   }
 
-  const { user, matches } = payload;
+  const { user, matches, allUserLeagues, season } = payload;
   const displayName = user.username || username;
-  if (matches.length === 0) {
+  const leagues = viewerLeagues(matches, allUserLeagues);
+  if (leagues.length === 0) {
     return (
       <div className="space-y-4">
         <h1 className="text-2xl font-semibold">{displayName}</h1>
         <p className="text-sm text-emerald-100/70">
-          None of your {payload.season} Sleeper leagues are hosted here for roulette
-          standings.
+          No {season} Sleeper NFL leagues were found for this username.
         </p>
         <Link href="/?change=1" className="text-sm text-emerald-200 hover:underline">
           Try another username
@@ -121,10 +127,10 @@ export default async function UserStandingsPage({
   }
 
   const requested = query.league?.trim() ?? "";
-  let primary = matches.find((league) => league.sleeperLeagueId === requested) ?? null;
+  let primary = leagues.find((league) => league.sleeperLeagueId === requested) ?? null;
   let history = primary ? await walkPreviousLeagues(primary.sleeperLeagueId) : [];
   if (!primary && requested) {
-    for (const league of matches) {
+    for (const league of leagues) {
       const chain = await walkPreviousLeagues(league.sleeperLeagueId);
       if (chain.some((row) => row.league_id === requested)) {
         primary = league;
@@ -133,15 +139,19 @@ export default async function UserStandingsPage({
       }
     }
   }
-  primary = primary ?? matches[0];
-  if (history.length === 0) {
+  primary = primary ?? leagues[0];
+  const hosted = primary.hosted;
+  if (hosted && history.length === 0) {
     history = await walkPreviousLeagues(primary.sleeperLeagueId);
   }
   const selectedId =
-    requested && history.some((row) => row.league_id === requested)
+    hosted && requested && history.some((row) => row.league_id === requested)
       ? requested
       : primary.sleeperLeagueId;
-  const tab: StandingsTab = isStandingsTab(query.tab) ? query.tab : "standings";
+  const requestedTab: ViewerTab | undefined = isStandingsTab(query.tab)
+    ? query.tab
+    : undefined;
+  const tab: ViewerTab = tabForViewerLeague(hosted, requestedTab);
   const historySubtab: HistorySubtab = isHistorySubtab(query.history)
     ? query.history
     : "h2h";
@@ -149,20 +159,23 @@ export default async function UserStandingsPage({
   const sort = { column, direction };
 
   const standingsLeagueId = tab === "history" ? primary.sleeperLeagueId : selectedId;
-  const board = await loadLeagueStandings(standingsLeagueId);
-  const maxWeek = Math.max(1, board.playoffWeekStart - 1);
+  const board = hosted ? await loadLeagueStandings(standingsLeagueId) : null;
+  const maxWeek = Math.max(1, (board?.playoffWeekStart ?? 15) - 1);
   const weekParam = Number(query.week);
-  const defaultWeek = Math.min(maxWeek, Math.max(1, board.throughWeek || board.week));
+  const defaultWeek = Math.min(
+    maxWeek,
+    Math.max(1, board?.throughWeek || board?.week || 1),
+  );
   const selectedWeek = Number.isFinite(weekParam) && weekParam >= 1
     ? Math.min(maxWeek, Math.max(1, weekParam))
     : defaultWeek;
 
   const matchupWeek = tab === "weekly" ? selectedWeek : defaultWeek;
   const [matchups, bracket, historySeasons] = await Promise.all([
-    tab === "bracket" || tab === "history"
-      ? Promise.resolve(null)
-      : loadLeagueMatchups(selectedId, matchupWeek),
-    tab === "bracket" ? loadWinnersBracket(selectedId) : Promise.resolve(null),
+    hosted && tab !== "bracket" && tab !== "history"
+      ? loadLeagueMatchups(selectedId, matchupWeek)
+      : Promise.resolve(null),
+    hosted && tab === "bracket" ? loadWinnersBracket(selectedId) : Promise.resolve(null),
     tab === "history"
       ? loadLeagueHistory(primary.sleeperLeagueId)
       : Promise.resolve([]),
@@ -172,35 +185,55 @@ export default async function UserStandingsPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">{board.name}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            {board?.name ?? primary.name}
+          </h1>
           <p className="mt-2 text-sm text-emerald-100/70">
-            {board.season} · through week {board.throughWeek}
-            {board.currentWeekFinal ? " (current week final)" : " (current week in progress)"}
-            {" · "}
-            top {board.playoffTeams} in playoffs
+            {hosted && board
+              ? `${board.season} · through week ${board.throughWeek}${
+                  board.currentWeekFinal
+                    ? " (current week final)"
+                    : " (current week in progress)"
+                } · top ${board.playoffTeams} in playoffs`
+              : `${historySeasons[0]?.season ?? season} · History`}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <LiveSyncButton />
-          <a
-            className={buttonVariants()}
-            href={`/api/og/${board.sleeperLeagueId}?download=1`}
-          >
-            <Download />
-            Download
-          </a>
-        </div>
+        {hosted && board ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <LiveSyncButton />
+            <a
+              className={buttonVariants()}
+              href={`/api/og/${board.sleeperLeagueId}?download=1`}
+            >
+              <Download />
+              Download
+            </a>
+          </div>
+        ) : null}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <LeagueToggle
-          leagues={matches}
+          leagues={leagues}
           selectedId={primary.sleeperLeagueId}
-          hrefFor={(leagueId) =>
-            standingsPath(displayName, leagueId, tab, selectedWeek, sort, historySubtab)
-          }
+          hrefFor={(leagueId) => {
+            const target = leagues.find((row) => row.sleeperLeagueId === leagueId);
+            const nextTab = toggleTabForTarget(
+              target?.hosted ?? false,
+              tab,
+              hosted,
+            );
+            return standingsPath(
+              displayName,
+              leagueId,
+              nextTab,
+              selectedWeek,
+              sort,
+              nextTab === "history" ? historySubtab : undefined,
+            );
+          }}
         />
-        {tab === "history" ? null : (
+        {hosted && tab !== "history" ? (
           <YearSelect
             history={history.map((league) => ({
               leagueId: league.league_id,
@@ -213,11 +246,12 @@ export default async function UserStandingsPage({
             sort={column}
             dir={direction}
           />
-        )}
+        ) : null}
       </div>
 
       <StandingsTabs
         selected={tab}
+        hosted={hosted}
         hrefFor={(next) =>
           standingsPath(
             displayName,
@@ -230,7 +264,7 @@ export default async function UserStandingsPage({
         }
       />
 
-      {tab === "standings" ? (
+      {hosted && tab === "standings" && board ? (
         <>
           <Card className="border-white/10 bg-[#0d1f14]">
             <CardHeader>
@@ -257,7 +291,7 @@ export default async function UserStandingsPage({
         </>
       ) : null}
 
-      {tab === "weekly" ? (
+      {hosted && tab === "weekly" ? (
         <div className="space-y-6">
           <div className="flex flex-wrap gap-1">
             {Array.from({ length: maxWeek }, (_, index) => index + 1).map((week) => (
@@ -334,7 +368,7 @@ export default async function UserStandingsPage({
         </div>
       ) : null}
 
-      {tab === "bracket" ? (
+      {hosted && tab === "bracket" ? (
         <PlayoffBracket
           matches={bracket?.matches ?? []}
           teams={bracket?.teams ?? []}
@@ -349,6 +383,7 @@ export default async function UserStandingsPage({
             user.user_id,
             displayName,
           )}
+          viewerUsername={displayName}
           subtab={historySubtab}
           subtabHrefs={{
             h2h: standingsPath(

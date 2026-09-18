@@ -11,6 +11,8 @@ import {
   getWeekProjections,
   pairMatchups,
 } from "@/lib/sleeper";
+import { USERNAME_COOKIE } from "@/lib/username";
+import { userIsLeagueMember } from "@/lib/viewer-leagues";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -22,14 +24,26 @@ export async function GET(request: NextRequest) {
   if (!leagueId || !Number.isFinite(weekParam) || weekParam < 1 || !Number.isFinite(rosterParam)) {
     return NextResponse.json({ error: "Missing league, week, or roster" }, { status: 400 });
   }
-  if (!(await isAllowedLeague(leagueId))) {
-    return NextResponse.json({ error: "Unknown league" }, { status: 404 });
+  const identity =
+    request.nextUrl.searchParams.get("username")?.trim() ||
+    request.cookies.get(USERNAME_COOKIE)?.value?.trim() ||
+    null;
+  const hosted = await isAllowedLeague(leagueId);
+  let members: Awaited<ReturnType<typeof getLeagueUsers>> | null = null;
+  if (!hosted) {
+    if (!identity) {
+      return NextResponse.json({ error: "Unknown league" }, { status: 404 });
+    }
+    members = await getLeagueUsers(leagueId);
+    if (!userIsLeagueMember(members, identity)) {
+      return NextResponse.json({ error: "Unknown league" }, { status: 404 });
+    }
   }
 
   try {
     const [league, users, rosters, matchups, players] = await Promise.all([
       getLeague(leagueId),
-      getLeagueUsers(leagueId),
+      members ? Promise.resolve(members) : getLeagueUsers(leagueId),
       getRosters(leagueId),
       getMatchups(leagueId, weekParam),
       getNflPlayers(),

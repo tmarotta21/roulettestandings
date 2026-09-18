@@ -28,13 +28,16 @@ export function isHistorySubtab(value: string | undefined): value is HistorySubt
 export function StandingsTabs({
   selected,
   hrefFor,
+  hosted = true,
 }: {
   selected: StandingsTab;
   hrefFor: (tab: StandingsTab) => string;
+  hosted?: boolean;
 }) {
+  const tabs = hosted ? TABS : TABS.filter((tab) => tab.id === "history");
   return (
     <div className="flex flex-wrap gap-1 border-b border-white/10 pb-2">
-      {TABS.map((tab) => (
+      {tabs.map((tab) => (
         <a
           key={tab.id}
           href={hrefFor(tab.id)}

@@ -1,12 +1,11 @@
 import { cn } from "@/lib/utils";
-import type { HostedLeagueRecord } from "@/lib/leagues";
 
 export function LeagueToggle({
   leagues,
   selectedId,
   hrefFor,
 }: {
-  leagues: HostedLeagueRecord[];
+  leagues: { sleeperLeagueId: string; name: string }[];
   selectedId: string;
   hrefFor: (leagueId: string) => string;
 }) {

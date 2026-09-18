@@ -24,12 +24,12 @@ Base: `https://api.sleeper.app/v1`. `sleeperGet` always uses `cache: "no-store"`
 | `getMatchups` | `/league/{id}/matchups/{week}` |
 | `getWinnersBracket` | `/league/{id}/winners_bracket` |
 | `getUser` | `/user/{usernameOrId}` |
-| `getUserLeagues` | `/user/{userId}/leagues/nfl/{season}` |
+| `getUserLeagues` | `/user/{userId}/leagues/nfl/{season}` — also feeds the public league toggle (`viewerLeagues`: hosted first, then remaining user leagues) |
 | `walkPreviousLeagues` | follow `previous_league_id` with a seen-set, default `maxSeasons` 20. Use `normalizeSleeperLeagueId` so `"0"` / empty means no predecessor (never fetch `/league/0`). |
 | `getNflPlayers` | `/players/nfl` — 24h fetch cache (`next.revalidate`). Do not use `sleeperGet` (that stays `cache: "no-store"`). |
 | `getWeekProjections` | `/projections/nfl/regular/{season}/{week}` via `sleeperGet`. Accept array or player-id map. |
 
-History snapshots: walk from the **current hosted** league id (not the year dropdown). Identify managers by `owner_id`, display the latest `display_name` / `username`. Cache the assembled chain with `unstable_cache` (~5 min) in `lib/history-load.ts`. Box scores: `GET /api/boxscore?league=&week=&roster=` guarded by `isAllowedLeague`. Projected points = `scoreFromStats` in `@/lib/history`; omit when stats are missing or the product is empty.
+History snapshots: walk from the **current** league id in the username toggle (not the year dropdown). Hosted admin/seed leagues keep Standings / Weekly / Bracket / History. Other leagues from `getUserLeagues` are History-only and never join the admin registry. Identify managers by `owner_id`, display the latest `display_name` / `username`. Cache the assembled chain with `unstable_cache` (~5 min) in `lib/history-load.ts`. Box scores: `GET /api/boxscore?league=&week=&roster=&username=` — hosted via `isAllowedLeague`, otherwise the page username must appear in `getLeagueUsers` (`userIsLeagueMember`). Do not widen `isAllowedLeague` (OG PNG and Sleeper chat stay hosted-only). Projected points = `scoreFromStats` in `@/lib/history`; omit when stats are missing or the product is empty.
 
 ## Points and pairing
 
